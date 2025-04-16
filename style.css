@@ -1,0 +1,22 @@
+body {
+    background: black;
+    color: lime;
+    font-family: monospace;
+    padding: 1rem;
+  }
+  #terminal {
+    white-space: pre-wrap;
+    margin-bottom: 1rem;
+  }
+  #input-form {
+    display: flex;
+  }
+  #user-input {
+    flex: 1;
+    font-size: 1rem;
+    padding: 0.5rem;
+    background: #111;
+    border: 1px solid lime;
+    color: lime;
+  }
+  

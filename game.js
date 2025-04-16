@@ -1,266 +1,235 @@
 class Game {
-    constructor() {
-      this.playerHP = 15;
-      this.playerGold = 1000;
-      this.silverRing = 0;
-      this.choice = 0;
-      this.monsterHP = 15;
-      this.monsterDamage = 0;
-      this.playerWeapon = "Knife";
-      this.playerName = "";
-      this.playerPotions = ["Red Potion", ""];
-    }
+  constructor() {
+    this.playerHP = 15;
+    this.playerGold = 1000;
+    this.silverRing = 0;
+    this.monsterHP = 15;
+    this.monsterDamage = 0;
+    this.playerWeapon = "Knife";
+    this.playerName = "";
+    this.playerPotions = ["Red Potion", ""];
 
+    this.terminal = document.getElementById('terminal');
+    this.form = document.getElementById('input-form');
+    this.input = document.getElementById('user-input');
 
-  
-    // Helper function to get input from the user
-    async getInput(question) {
-      const readline = require("readline");
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-      });
-  
-      return new Promise((resolve) => rl.question(question, (answer) => {
-        rl.close();
-        resolve(answer);
-      }));
-    }
-  
-    // Player Setup / Introduction
-    async playerSetup() {
-      console.log("---------------------------");
-      console.log(
-        "Welcome to the game. In a simpler world, you have been placed into a time to battle with your wits. Move up the rankings of your town, defeat the dragon, return the ring to the town's people, and break the curse. Your reward? Riches beyond measure and glory that rivals the ages."
-      );
-      console.log("---------------------------\n");
-      console.log(`Your Health: ${this.playerHP}`);
-      console.log(`Your Weapon: ${this.playerWeapon} [damage 5]`);
-      console.log(`Your Gold: ${this.playerGold}`);
-      console.log(`Your Potions: ${this.playerPotions[0]}\n`);
-      console.log("---------------------------\n");
-  
-      const name = await this.getInput("What's your name, traveler? ");
-      if (name.length < 1 || !/^[a-zA-Z]+$/.test(name)) {
-        console.log("Please enter your name correctly...");
-        return this.playerSetup();
-      } else {
-        this.playerName = name;
-        console.log(`\nPleased to meet you, ${this.playerName}.`);
-        return this.townGate();
+    this.awaitingInput = null;
+
+    this.form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const value = this.input.value.trim();
+      this.input.value = "";
+      if (this.awaitingInput) {
+        const callback = this.awaitingInput;
+        this.awaitingInput = null;
+        callback(value);
       }
+    });
+
+    this.print("Starting the game...");
+    this.playerSetup();
+  }
+
+  print(text) {
+    this.terminal.innerText += text + "\n";
+    this.terminal.scrollTop = this.terminal.scrollHeight;
+  }
+
+  getInput(promptText) {
+    this.print(promptText);
+    return new Promise((resolve) => {
+      this.awaitingInput = resolve;
+    });
+  }
+
+  async playerSetup() {
+    this.print("---------------------------");
+    this.print("Welcome to the game. In a simpler world, you have been placed into a time to battle with your wits...");
+    this.print("---------------------------");
+    this.print(`Your Health: ${this.playerHP}`);
+    this.print(`Your Weapon: ${this.playerWeapon} [damage 5]`);
+    this.print(`Your Gold: ${this.playerGold}`);
+    this.print(`Your Potions: ${this.playerPotions[0]}`);
+    this.print("---------------------------");
+
+    const name = await this.getInput("What's your name, traveler?");
+    if (name.length < 1 || !/^[a-zA-Z]+$/.test(name)) {
+      this.print("Please enter your name correctly...");
+      return this.playerSetup();
+    } else {
+      this.playerName = name;
+      this.print(`\nPleased to meet you, ${this.playerName}.`);
+      return this.townGate();
     }
-  
-    // Town Gate
-    async townGate() {
-      console.log("\nWelcome to the Town Gate.");
-      console.log("There is a guard at the gate...");
-      console.log("\nWhat do you want to do?");
-      console.log("1. Talk to the guard");
-      console.log("2. Attack the guard");
-      console.log("3. Leave");
-  
-      const choice = parseInt(await this.getInput("> "));
-      if (isNaN(choice)) {
-        console.log("Please enter a valid number.");
-        return this.townGate();
-      }
-  
-      if (choice === 1) {
+  }
+
+  async townGate() {
+    this.print("\nWelcome to the Town Gate.");
+    this.print("There is a guard at the gate...");
+    this.print("1. Talk to the guard");
+    this.print("2. Attack the guard");
+    this.print("3. Leave");
+
+    const choice = await this.getInput("> ");
+    switch (parseInt(choice)) {
+      case 1:
         if (this.silverRing === 1) {
-          console.log("GAME WIN! You have defeated the dragon and returned the cursed ring. The town celebrates your victory!");
+          this.print("GAME WIN! You have defeated the dragon and returned the cursed ring. The town celebrates your victory!");
         } else {
-          console.log(`Guard: Hello there, stranger. Your name was ${this.playerName}? Sorry, but we can't let a stranger into our town.`);
-          console.log("Maybe if you defeated the dragon that's been terrifying our town and had the cursed ring to prove it...");
+          this.print(`Guard: Hello there, stranger. Your name was ${this.playerName}? Sorry, but we can't let a stranger into our town.`);
+          this.print("Maybe if you defeated the dragon and had the cursed ring to prove it...");
           return this.townGate();
         }
-      } else if (choice === 2) {
+        break;
+      case 2:
         this.playerHP -= 1;
-        console.log("Guard: Hey, don't be stupid! *The guard hit you so hard that you gave up...* [You receive 1 damage]");
-        console.log(`Your Health: ${this.playerHP}`);
+        this.print("Guard hits you! [-1 HP]");
+        this.print(`Your Health: ${this.playerHP}`);
         if (this.playerHP < 1) {
-          console.log("GAME OVER. You have no health left.");
-          process.exit(0);
-        }
-        return this.townGate();
-      } else if (choice === 3) {
-        return this.crossRoads();
-      } else {
-        return this.townGate();
-      }
-    }
-  
-    // Cross Roads
-    async crossRoads() {
-      console.log("\n---------------------------");
-      console.log("Welcome to the CrossRoads.");
-      console.log("Where do you want to go?");
-      console.log("1. South - Beware");
-      console.log("2. North - Head Back to Town");
-      console.log("3. West - Shop");
-      console.log("4. East - Unknown");
-  
-      const choice = parseInt(await this.getInput("> "));
-      if (isNaN(choice)) {
-        console.log("Please enter a valid number.");
-        return this.crossRoads();
-      }
-  
-      if (choice === 1) {
-        return this.south();
-      } else if (choice === 2) {
-        return this.townGate();
-      } else if (choice === 3) {
-        return this.west();
-      } else if (choice === 4) {
-        return this.east();
-      } else {
-        return this.crossRoads();
-      }
-    }
-  
-    // East
-    async east() {
-      console.log("\n---------------------------");
-      console.log("Welcome to the East. It's peaceful here.");
-      console.log("What do you want to do?");
-      console.log("1. Leave");
-      if (!this.playerPotions[1]) console.log("2. Pickup green potion");
-  
-      const choice = parseInt(await this.getInput("> "));
-      if (isNaN(choice)) {
-        console.log("Please enter a valid number.");
-        return this.east();
-      }
-  
-      if (choice === 1) {
-        return this.crossRoads();
-      } else if (choice === 2 && !this.playerPotions[1]) {
-        this.playerPotions[1] = "Green Potion";
-        console.log("You picked up a green potion!");
-        return this.east();
-      } else {
-        return this.east();
-      }
-    }
-  
-    // West
-    async west() {
-      console.log("\n---------------------------");
-      console.log("Welcome to the Shop. You look quite wealthy...");
-      console.log("What do you want to do?");
-      console.log("1. Buy Sword [1000 gold]");
-      console.log("2. Leave");
-  
-      const choice = parseInt(await this.getInput("> "));
-      if (isNaN(choice)) {
-        console.log("Please enter a valid number.");
-        return this.west();
-      }
-  
-      if (choice === 1) {
-        if (this.playerGold >= 1000) {
-          this.playerGold -= 1000;
-          this.playerWeapon = "Sword";
-          console.log("You bought a sword!");
-          return this.west();
+          this.print("GAME OVER. You have no health left.");
+          return;
         } else {
-          console.log("You don't have enough gold!");
-          return this.west();
+          return this.townGate();
         }
-      } else if (choice === 2) {
+      case 3:
         return this.crossRoads();
-      } else {
-        return this.west();
-      }
-    }
-  
-    // South
-    async south() {
-      console.log("\n---------------------------");
-      console.log("Welcome to the South. You encounter a monster!");
-      console.log("What do you want to do?");
-      console.log("1. Fight the monster");
-      console.log("2. Use a red potion");
-      if (this.playerPotions[1]) console.log("3. Use a green potion");
-      console.log("4. Leave");
-  
-      const choice = parseInt(await this.getInput("> "));
-      if (isNaN(choice)) {
-        console.log("Please enter a valid number.");
-        return this.south();
-      }
-  
-      if (choice === 1) {
-        return this.fight();
-      } else if (choice === 2) {
-        this.playerHP += 1;
-        console.log("You used a red potion! [Health +1]");
-        return this.south();
-      } else if (choice === 3 && this.playerPotions[1]) {
-        console.log("You used a green potion! [Health +100]");
-        this.playerHP += 100;
-        this.playerPotions[1] = "";
-        return this.south();
-      } else if (choice === 4) {
-        return this.crossRoads();
-      } else {
-        return this.south();
-      }
-    }
-  
-    // Fight
-    async fight() {
-      console.log("\n---------------------------");
-      console.log("You are in a fight now!!");
-      console.log("1. Attack!");
-      console.log("2. Leave!");
-  
-      const choice = parseInt(await this.getInput("> "));
-      if (isNaN(choice)) {
-        console.log("Please enter a valid number.");
-        return this.fight();
-      }
-  
-      if (choice === 1) {
-        return this.attack();
-      } else if (choice === 2) {
-        return this.south();
-      } else {
-        return this.fight();
-      }
-    }
-  
-    // Attack
-    async attack() {
-      const playerDamage =
-        this.playerWeapon === "Knife"
-          ? 1 + Math.floor(Math.random() * 5)
-          : 1 + Math.floor(Math.random() * 12);
-      console.log(`You attacked the monster and dealt ${playerDamage} damage!`);
-      this.monsterHP -= playerDamage;
-  
-      if (this.monsterHP < 1) {
-        console.log("You defeated the monster and gained the cursed ring!");
-        this.silverRing = 1;
+      default:
+        this.print("Please enter a valid number.");
         return this.townGate();
+    }
+  }
+
+  async crossRoads() {
+    this.print("\n---------------------------");
+    this.print("Welcome to the CrossRoads.");
+    this.print("1. South - Beware");
+    this.print("2. North - Head Back to Town");
+    this.print("3. West - Shop");
+    this.print("4. East - Unknown");
+
+    const choice = await this.getInput("> ");
+    switch (parseInt(choice)) {
+      case 1: return this.south();
+      case 2: return this.townGate();
+      case 3: return this.west();
+      case 4: return this.east();
+      default:
+        this.print("Please enter a valid number.");
+        return this.crossRoads();
+    }
+  }
+
+  async east() {
+    this.print("\n---------------------------");
+    this.print("Welcome to the East. It's peaceful here.");
+    this.print("1. Leave");
+    if (!this.playerPotions[1]) this.print("2. Pickup green potion");
+
+    const choice = await this.getInput("> ");
+    const c = parseInt(choice);
+    if (isNaN(c)) return this.east();
+
+    if (c === 1) return this.crossRoads();
+    if (c === 2 && !this.playerPotions[1]) {
+      this.playerPotions[1] = "Green Potion";
+      this.print("You picked up a green potion!");
+      return this.east();
+    }
+    return this.east();
+  }
+
+  async west() {
+    this.print("\n---------------------------");
+    this.print("Welcome to the Shop. You look quite wealthy...");
+    this.print("1. Buy Sword [1000 gold]");
+    this.print("2. Leave");
+
+    const choice = await this.getInput("> ");
+    const c = parseInt(choice);
+    if (isNaN(c)) return this.west();
+
+    if (c === 1) {
+      if (this.playerGold >= 1000) {
+        this.playerGold -= 1000;
+        this.playerWeapon = "Sword";
+        this.print("You bought a sword!");
       } else {
-        this.monsterDamage = 1 + Math.floor(Math.random() * 5);
-        this.playerHP -= this.monsterDamage;
-        console.log(`The monster attacked you for ${this.monsterDamage} damage!`);
-        if (this.playerHP < 1) {
-          console.log("GAME OVER. You have no health left.");
-          process.exit(0);
-        } else {
-          return this.fight();
-        }
+        this.print("You don't have enough gold!");
+      }
+      return this.west();
+    } else if (c === 2) {
+      return this.crossRoads();
+    }
+    return this.west();
+  }
+
+  async south() {
+    this.print("\n---------------------------");
+    this.print("Welcome to the South. You encounter a monster!");
+    this.print("1. Fight the monster");
+    this.print("2. Use a red potion");
+    if (this.playerPotions[1]) this.print("3. Use a green potion");
+    this.print("4. Leave");
+
+    const choice = await this.getInput("> ");
+    const c = parseInt(choice);
+    if (isNaN(c)) return this.south();
+
+    if (c === 1) return this.fight();
+    if (c === 2) {
+      this.playerHP += 1;
+      this.print("You used a red potion! [Health +1]");
+      return this.south();
+    }
+    if (c === 3 && this.playerPotions[1]) {
+      this.playerHP += 100;
+      this.playerPotions[1] = "";
+      this.print("You used a green potion! [Health +100]");
+      return this.south();
+    }
+    if (c === 4) return this.crossRoads();
+    return this.south();
+  }
+
+  async fight() {
+    this.print("\n---------------------------");
+    this.print("You are in a fight now!!");
+    this.print("1. Attack!");
+    this.print("2. Leave!");
+
+    const choice = await this.getInput("> ");
+    const c = parseInt(choice);
+    if (isNaN(c)) return this.fight();
+
+    if (c === 1) return this.attack();
+    if (c === 2) return this.south();
+    return this.fight();
+  }
+
+  async attack() {
+    const playerDamage = this.playerWeapon === "Knife"
+      ? 1 + Math.floor(Math.random() * 5)
+      : 1 + Math.floor(Math.random() * 12);
+    this.monsterHP -= playerDamage;
+    this.print(`You attacked the monster and dealt ${playerDamage} damage!`);
+
+    if (this.monsterHP < 1) {
+      this.print("You defeated the monster and gained the cursed ring!");
+      this.silverRing = 1;
+      return this.townGate();
+    } else {
+      this.monsterDamage = 1 + Math.floor(Math.random() * 5);
+      this.playerHP -= this.monsterDamage;
+      this.print(`The monster attacked you for ${this.monsterDamage} damage!`);
+
+      if (this.playerHP < 1) {
+        this.print("GAME OVER. You have no health left.");
+        return;
+      } else {
+        return this.fight();
       }
     }
+  }
 }
 
-// Start the game
-(async () => {
-  console.log("Starting the game...");
-  const game = new Game();
-  await game.playerSetup();
-})();
+window.onload = () => new Game();
